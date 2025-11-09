@@ -1,8 +1,11 @@
 // nuxt-app/nuxt.config.ts
 
+
 export default defineNuxtConfig({
   // On garde le mode SPA (ssr: false)
   ssr: false,
+
+  debug: true,
 
   // --- MODULES ---
   // On ajoute les 4 modules (UI, Pinia, VueFire, PWA)
@@ -12,6 +15,8 @@ export default defineNuxtConfig({
     'nuxt-vuefire',
     '@vite-pwa/nuxt'
   ],
+
+  css: ['~/assets/css/main.css'],
 
   // --- CONFIGURATION VUEFIRE ---
   vuefire: {
@@ -25,10 +30,11 @@ export default defineNuxtConfig({
       appId: process.env.NUXT_PUBLIC_FIREBASE_APP_ID,
     },
     // On active les services Firebase dont on a besoin
-    services: {
-      auth: true,       // Pour l'authentification
+      auth:{
+        enabled: true
+      } ,       // Pour l'authentification
       firestore: true,  // Pour la base de données
-    }
+  
   },
 
   // --- CONFIGURATION PWA ---
