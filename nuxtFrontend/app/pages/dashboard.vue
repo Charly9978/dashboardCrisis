@@ -1,5 +1,4 @@
 <template>
-  <div>
     <UContainer class="py-8">
       <div class="flex justify-between items-center mb-6">
         <h1 class="text-3xl font-bold">Tableau de Bord</h1>
@@ -58,7 +57,6 @@
       </div>
 
     </UContainer>
-  </div>
 </template>
 
 <script setup>

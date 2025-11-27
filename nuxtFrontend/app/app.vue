@@ -5,7 +5,9 @@
     </div>
 
     <div v-else>
-      <NuxtPage />
+      <NuxtLayout>
+        <NuxtPage />
+      </NuxtLayout>
     </div>
     
     <UNotifications />
