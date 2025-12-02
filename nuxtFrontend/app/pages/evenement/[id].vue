@@ -29,8 +29,8 @@ const items = computed<NavigationMenuItem[]>(() => [{
     label: 'Main courante',
 }])
 
-//const eventId = route.params.id
-const eventId = "ncjjOwiM5NFtd1G7be1c"
+const eventId = route.params.id
+//const eventId = "ncjjOwiM5NFtd1G7be1c"
 
 // 1. On récupère les détails de l'événement (1 seul document)
 // 'useDocument' le mettra à jour en temps réel si le titre change
@@ -84,7 +84,9 @@ const columns: ColumnDef<TableActions>[] = [
         header: 'Date de mise à jour',
         cell: ({ row }) => {
             const timestamp = row.getValue('last_updated_at') as Timestamp
-            return timestamp.toDate().toLocaleTimeString()
+            if(timestamp){
+                return timestamp.toDate().toLocaleTimeString()
+            }
         }
     }, {
         accessorKey: 'last_updated_by_nom',
@@ -138,7 +140,10 @@ function openModal(row: Row<TableActions>) {
             </template>
         </UHeader>
         <UMain>
-            <h3 class="text-xl font-bold mt-8">Evacuation</h3>
+            <div class="flex flex-row-reverse" >
+                <EvenementAddModal/>
+            </div>
+            <h3 class="text-xl font-bold mt-4">Evacuation</h3>
             <UTable :data="evacActions" :columns="columns" />
             <h3 class="text-xl font-bold mt-8">Arrets techniques</h3>
             <UTable :data="arretTechActions" :columns="columns" />

@@ -65,9 +65,9 @@ export const createDefaultActions = onDocumentCreated(
         created_at: FieldValue.serverTimestamp(), // Syntaxe modulaire
         demandeur_id: eventData.createur_id,
         demandeur_nom: eventData.createur_nom,
-        last_updated_at: FieldValue.serverTimestamp(), // Syntaxe modulaire
-        last_updated_by_id: eventData.createur_id,
-        last_updated_by_nom: eventData.createur_nom,
+        last_updated_at: "", // Syntaxe modulaire
+        last_updated_by_id: "",
+        last_updated_by_nom: "",
       };
 
       batch.set(newActionRef, newActionData);
