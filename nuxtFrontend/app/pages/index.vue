@@ -1,7 +1,7 @@
 <template>
     <UContainer class="py-8">
       <div class="flex justify-between items-center mb-6">
-        <h1 class="text-3xl font-bold">Tableau de Bord</h1>
+        <h2 class="text-2xl font-semibold mb-4">Événements en cours</h2>
         
         <UButton
           v-if="store.isAdmin"
@@ -11,8 +11,6 @@
           @click="goToCreateEvent"
         />
       </div>
-
-      <h2 class="text-2xl font-semibold mb-4">Événements en cours</h2>
 
       <div v-if="pending" class="flex justify-center py-12">
         <USpinner size="xl" />
@@ -28,7 +26,7 @@
       />
 
       <div v-else-if="evenementsEnCours && evenementsEnCours.length > 0" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        <UCard v-for="event in evenementsEnCours" :key="event.id">
+        <UCard v-for="event in evenementsEnCours" :key="event.id" variant="subtle">
           <template #header>
             <h3 class="font-bold text-lg">{{ event.titre }}</h3>
           </template>
@@ -42,7 +40,7 @@
 
           <template #footer>
             <UButton
-              label="Ouvrir le SITREP"
+              label="Ouvrir l'évènement"
               variant="soft"
               block
               @click="openEvent(event.id)"
