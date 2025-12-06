@@ -56,6 +56,12 @@ service cloud.firestore {
       allow read: if isActeur();
       allow write: if isAdmin(); // Seuls les Admins gèrent les templates
     }
+
+    // Collection "crisis_room"
+    match /crisis_room/{crisis_roomId} {
+      allow read: if isActeur();
+      allow write: if isAdmin(); // Seuls les Admins gèrent les templates
+    }
   }
 }
 
