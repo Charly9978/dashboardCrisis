@@ -2,65 +2,78 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // --- PROFIL DES UTILISATEURS ---
-    // Logique :
-    // - L'utilisateur doit être connecté (auth != null)
-    // - On va chercher son profil en utilisant son email (c'est notre clé)
-    // - On stocke ses infos de profil dans une variable 'profil'
+    // --- LOGIQUE RÔLES ---
     function getProfil() {
       return get(/databases/$(database)/documents/profils/$(request.auth.token.email)).data;
     }
-    // Fonction pour vérifier si on est Admin
     function isAdmin() {
       return getProfil().role == 'Admin';
     }
-    // Fonction pour vérifier si on est au moins "Acteur"
     function isActeur() {
       return getProfil().role in ['Admin', 'Acteur'];
     }
 
-    // --- REGLES D'ACCES ---
+    // --- RÈGLES ---
 
-    // Collection "profils"
+    // 1. Profils
     match /profils/{email} {
-      // Un admin peut tout faire (créer/inviter, modifier les rôles, supprimer)
       allow read, write: if isAdmin();
-      
-      // Un utilisateur peut lire son propre profil (pour la vérification)
       allow get: if request.auth.token.email == email;
-      // Un utilisateur peut mettre à jour son 'user_auth_id' lors de la 1ère connexion
       allow update: if request.auth.token.email == email 
                       && request.resource.data.keys().hasOnly(['user_auth_id']);
     }
 
-    // Collection "evenements"
+    // 2. Événements & Todos (MODIFIÉ)
     match /evenements/{eventId} {
-      allow read: if isActeur(); // Seuls les Acteurs et Admins peuvent voir
-      allow create, update: if isAdmin(); // Seuls les Admins peuvent créer/modifier un événement
+      allow read: if isActeur();
+      
+      // CRÉATION : Seul l'Admin peut ouvrir une crise
+      allow create: if isAdmin();
+      
+      // MODIFICATION : L'Acteur doit pouvoir modifier la synthèse (blessés, chimie...)
+      // CHANGEMENT ICI : isAdmin() -> isActeur()
+      allow update: if isActeur(); 
+
+      // SOUS-COLLECTION TODOS (NOUVEAU)
+      // Les règles imbriquées gèrent la sous-collection /evenements/{id}/todos
+      match /todos/{todoId} {
+        // Les Acteurs peuvent créer, cocher, supprimer des tâches
+        allow read, write: if isActeur();
+      }
     }
 
-    // Collection "actions"
+    // 3. Actions (SITREP)
     match /actions/{actionId} {
       allow read: if isActeur();
-      allow write: if isActeur(); // Les Acteurs peuvent mettre à jour les statuts
+      allow write: if isActeur();
     }
     
-    // Collection "historique_actions" (ne devrait être écrite que par le backend)
+    // 4. Historique (Backend seulement)
     match /historique_actions/{logId} {
       allow read: if isActeur();
-      allow write: if false; // INTERDIT d'écrire depuis le client (géré par Cloud Function)
+      allow write: if false; 
+    }
+    match /historique_evenements/{logId} { // (NOUVEAU pour l'historique synthèse)
+      allow read: if isActeur();
+      allow write: if false;
     }
 
-    // Collection "templates_actions"
+    // 5. Templates & Scénarios (Admin)
     match /templates_actions/{templateId} {
       allow read: if isActeur();
-      allow write: if isAdmin(); // Seuls les Admins gèrent les templates
+      allow write: if isAdmin();
     }
 
-    // Collection "crisis_room"
+    // (NOUVEAU) Collection Scénarios
+    match /scenarios/{scenarioId} {
+      allow read: if isActeur(); // Les acteurs doivent les lire pour les appliquer
+      allow write: if isAdmin(); // Seuls les admins créent les modèles de scénarios
+    }
+
+    // 6. Salles de crise
     match /crisis_room/{crisis_roomId} {
       allow read: if isActeur();
-      allow write: if isAdmin(); // Seuls les Admins gèrent les templates
+      allow write: if isAdmin();
     }
   }
 }

@@ -29,6 +29,10 @@ const items = ref([
     {
         title: "Modèles d'actions",
         to: '/admin/template-actions'
+    },
+    {
+        title: "Scénarios",
+        to: '/admin/scenario'
     }
 ])
 </script>

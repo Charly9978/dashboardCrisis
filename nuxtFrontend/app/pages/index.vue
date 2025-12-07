@@ -97,4 +97,5 @@ function goToCreateEvent() {
 function openEvent(eventId) {
   router.push(`/evenement/${eventId}`) // On ira créer ce dossier de page après
 }
+
 </script>

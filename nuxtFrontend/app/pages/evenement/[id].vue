@@ -116,6 +116,9 @@ function openModal(row: Row<TableActions>) {
 }
 
 //............................................................
+definePageMeta({
+  layout: 'event',
+})
 
 </script>
 
