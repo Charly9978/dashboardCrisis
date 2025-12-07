@@ -25,6 +25,10 @@ const items = ref([
     }, {
         title: "Salles de crise",
         to: '/admin/crisis-rooms'
+    },
+    {
+        title: "Modèles d'actions",
+        to: '/admin/template-actions'
     }
 ])
 </script>

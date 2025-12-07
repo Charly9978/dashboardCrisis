@@ -1,7 +1,7 @@
 <template>
   <UForm :schema="schema" :state="state" @submit="onSubmit" class="flex gap-4">
     
-    <UFormField name="nom_action" class="flex-grow">
+    <UFormField name="nom_action" class="grow">
       <UInput 
         v-model="state.nom_action" 
         placeholder="Entrer une nouvelle action manuelle..." 
