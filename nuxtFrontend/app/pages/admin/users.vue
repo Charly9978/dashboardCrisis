@@ -22,7 +22,7 @@
 
                 <template #actions-cell="{ row }">
                     <div class="flex gap-2">
-                        <UButton icon="i-heroicons-pencil-square" size="xs" color="warning" variant="soft"
+                        <UButton icon="i-heroicons-pencil-square" size="xs" color="neutral" variant="soft"
                             @click="openModal(row.original)" />
                         <UButton icon="i-heroicons-trash" size="xs" color="error" variant="soft"
                             @click="confirmDelete(row.original)" />
