@@ -15,6 +15,7 @@ export interface IncidentData {
   lieu?: string
   cinetic?: IncidentCinetic | string
   observations?: string
+  updated_at?: string
   
   // Salle de crise
   crisisRoom?: {
@@ -75,7 +76,7 @@ export const useEvenementStore = defineStore('evenement', () => {
   )
 
   // useDocument s'occupe du onSnapshot et de la mise à jour temps réel
-  const { data: event, pending, error } = useDocument<IncidentData>(docRef)
+  const { data: event, pending, error } = useDocument<IncidentData>(docRef,{once:true})
 
   // --- ACTIONS ---
 
@@ -158,11 +159,13 @@ export const useEvenementStore = defineStore('evenement', () => {
   // On surveille les modifications de l'objet `event` (qui est lié à l'UI par v-model)
   // pour déclencher la sauvegarde.
   watch(event, (newVal, oldVal) => {
+    console.log('pending',pending.value)
     // Petit hack: on évite de sauvegarder si c'est le chargement initial (pending)
     if (!pending.value && newVal) {
         triggerAutoSave()
     }
   }, { deep: true })
+
 
   return {
     // State
