@@ -51,7 +51,7 @@
                             icon="i-heroicons-magnifying-glass" 
                             color="neutral" 
                             variant="subtle" 
-                            @click="openModal(scenario,true)"
+                            @click="openModal(scenario, true)"
                             label="Voir les détails"
                         />
                     </div>
@@ -131,8 +131,8 @@
                             <UButton type="submit" label="Enregistrer le scénario" :loading="isLoading" />
                         </div>
                         <div v-else class="flex justify-end gap-2 mt-6 pt-4 border-t border-gray-100 dark:border-gray-800">
-                            <UButton size="sm" label="Modifier" color="primary" variant="ghost" icon="i-heroicons-pencil-square" @click="openModal(state as Scenario,false)" />
-                            <UButton size="sm" icon="i-heroicons-trash" color="error" variant="ghost" @click="confirmDelete(state as Scenario)"/>
+                            <UButton size="sm" label="Modifier" color="primary" variant="ghost" icon="i-heroicons-pencil-square" @click="openModal(state as any, false)" />
+                            <UButton size="sm" icon="i-heroicons-trash" color="error" variant="ghost" @click="confirmDelete(state as any)"/>
                         </div>
                     </UForm>
             </template>
@@ -154,30 +154,18 @@
 </template>
 
 <script setup lang="ts">
-import { object, z } from 'zod'
-import { collection, doc, setDoc, deleteDoc, query, orderBy } from 'firebase/firestore'
+import { z } from 'zod'
+import { type Scenario, type Tache, useScenarioStore } from '~/stores/scenarioStore'
+import { storeToRefs } from 'pinia'
 
-// --- TYPES ---
-export interface Tache {
-    titre: string
-    delai_minutes: number
-    is_recurring: boolean
-    recurrence_interval?: number
-}
+// --- TYPES (Pour le typage local si besoin, sinon on peut importer depuis le store) ---
+// Note: Idéalement, déplacez ces interfaces dans ~/types/scenario.ts ou exportez-les du store
 
-export interface Scenario {
-  id: string
-  nom: string
-  description: string
-  taches: Tache[]
-}
 
-// --- CONFIG ---
-const db = useFirestore()
+// --- CONFIG STORE ---
+const scenarioStore = useScenarioStore()
+const { scenarios, pending } = storeToRefs(scenarioStore)
 const toast = useToast()
-
-const scenariosCollection = collection(db, 'scenarios')
-const { data: scenarios, pending } = useCollection<Scenario>(scenariosCollection)
 
 // --- ZOD SCHEMA ---
 const schema = z.object({
@@ -218,37 +206,32 @@ const isEditing = ref(false)
 const isReadOnly = ref(false)
 const isLoading = ref(false)
 
-const title = computed(()=>{
-    if(isEditing && isReadOnly){
-        return 'Détail du scénario'
-    }else
-     if(isEditing){
-        return 'Modifier le scénario'
-     }else{
-        return 'Créer un nouveau scénario'
-     }
+const title = computed(() => {
+    if(isEditing.value && isReadOnly.value) return 'Détail du scénario'
+    if(isEditing.value) return 'Modifier le scénario'
+    return 'Créer un nouveau scénario'
 })
 
-function openModal(scenario?: Scenario, isRO?:boolean) {
+function openModal(scenario?: any, isRO?: boolean) {
     if (scenario) {
-        isReadOnly.value = isRO!
+        isReadOnly.value = !!isRO
         isEditing.value = true
-        Object.assign(state,{...scenario})
+        Object.assign(state, { ...scenario })
     } else {
         isReadOnly.value = false
         isEditing.value = false
-        Object.assign(state, { ...initialState, taches: [] })
+        // On reset bien l'ID et les tâches
+        Object.assign(state, { ...initialState, id: undefined, taches: [] })
     }
     // Reset du formulaire d'ajout
-    Object.assign(newTask,{...initialNewTask})
+    Object.assign(newTask, { ...initialNewTask })
     isModalOpen.value = true
 }
 
-// --- GESTION DES TACHES (LOCAL) ---
+// --- GESTION DES TACHES (LOCAL - Pas de changement ici, c'est de l'UI pure) ---
 function addTaskToState() {
     if(!newTask.titre.trim()) return
     
-    // Validation basique de la récurrence
     if (newTask.is_recurring && (!newTask.recurrence_interval || newTask.recurrence_interval <= 0)) {
         toast.add({ title: 'Erreur', description: 'Intervalle de répétition invalide', color: 'error' })
         return
@@ -260,45 +243,46 @@ function addTaskToState() {
         is_recurring: newTask.is_recurring,
         recurrence_interval: newTask.is_recurring ? Number(newTask.recurrence_interval) : null
     })  
-    Object.assign(newTask,{...initialNewTask})
+    Object.assign(newTask, { ...initialNewTask })
 }
 
 function removeTask(index: number) {
     state.taches.splice(index, 1)
 }
 
-// --- SAVE ---
+// --- ACTIONS (VIA STORE) ---
 async function onSubmit() {
     isLoading.value = true
     try {
-        const docRef = isEditing.value && state.id 
-            ? doc(scenariosCollection, state.id) 
-            : doc(scenariosCollection)
-
-        const dataToSave = {
-            id: docRef.id,
+        const scenarioData = {
             nom: state.nom,
             description: state.description,
             taches: state.taches
         }
-        console.log('test',dataToSave)
 
-        await setDoc(docRef, dataToSave, { merge: true })
+        if (isEditing.value && state.id) {
+            // Mise à jour via le store
+            await scenarioStore.updateScenario(state.id, scenarioData)
+        } else {
+            // Création via le store
+            await scenarioStore.addScenario(scenarioData)
+        }
 
         toast.add({ title: 'Succès', description: 'Scénario enregistré', color: 'success' })
         isModalOpen.value = false
     } catch (e: any) {
+        console.error(e)
         toast.add({ title: 'Erreur', description: e.message, color: 'error' })
     } finally {
         isLoading.value = false
     }
 }
 
-// --- DELETE ---
+// --- DELETE (VIA STORE) ---
 const isDeleteModalOpen = ref(false)
 
-function confirmDelete(scenario: Scenario) {
-    Object.assign(state,{...scenario})
+function confirmDelete(scenario: any) {
+    Object.assign(state, { ...scenario })
     isDeleteModalOpen.value = true
 }
 
@@ -306,15 +290,16 @@ async function deleteScenario() {
     if (!state.id) return
     isLoading.value = true
     try {
-        await deleteDoc(doc(scenariosCollection, state.id))
+        await scenarioStore.deleteScenario(state.id)
         toast.add({ title: 'Succès', description: 'Scénario supprimé', color: 'success' })
         isDeleteModalOpen.value = false
+        isModalOpen.value = false // On ferme aussi la modale de détail si elle était ouverte
     } catch (e: any) {
         toast.add({ title: 'Erreur', description: e.message, color: 'error' })
     } finally {
         isLoading.value = false
-        isModalOpen.value = false
-        Object.assign(state, {...initialState})
+        // On reset le state proprement
+        Object.assign(state, { ...initialState })
     }
 }
 

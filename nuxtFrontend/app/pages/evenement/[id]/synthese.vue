@@ -31,8 +31,8 @@
 
                 <div class="lg:col-span-7 space-y-6">
 
-                    <EvenementSyntheseSituation/>
-
+                    <EvenementSyntheseAlerte/>
+                    
                     <EvenementSyntheseTodos/>
 
                     <EvenementSyntheseInstallations/>
@@ -43,10 +43,10 @@
                 </div>
 
                 <div class="lg:col-span-5 space-y-6">
-
+                    
+                    <EvenementSyntheseSituation/>
+                    
                     <EvenementSyntheseCrisisroom/>
-
-                    <EvenementSyntheseAlerte/>
 
                     <EvenementSyntheseHuman/>
 

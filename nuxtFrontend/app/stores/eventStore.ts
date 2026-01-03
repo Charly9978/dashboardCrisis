@@ -1,9 +1,15 @@
 import { defineStore } from 'pinia'
 import { useDocument, useFirestore } from 'vuefire'
-import { doc, updateDoc, serverTimestamp, Timestamp } from 'firebase/firestore'
+import { doc, updateDoc, serverTimestamp, Timestamp, writeBatch } from 'firebase/firestore'
 import { ref, computed, watch } from 'vue'
 
 // --- TYPES ---
+export enum IncidentStatus {
+  EVOLUTION = 'inevolution', // C - En cours
+  CONTROLLED = 'controlled', // B - Maîtrisé
+  FINISHED = 'finish'        // A - Terminé
+}
+
 export enum IncidentCinetic {
   SLOW = 'slow',
   FAST = 'fast'
@@ -11,8 +17,10 @@ export enum IncidentCinetic {
 
 export interface IncidentData {
   // Situation & Organisation
+  incident_at?: Timestamp | null
   descriptif?: string
   lieu?: string
+  status?: IncidentStatus | string
   cinetic?: IncidentCinetic | string
   observations?: string
   updated_at?: string
@@ -120,6 +128,32 @@ export const useEvenementStore = defineStore('evenement', () => {
       }
     }, 1500)
   }
+
+  async function triggerScenario(scenario: any) {
+    if(!store.isActeur) return
+    try {
+        const batch = writeBatch(db)
+        const tasks = scenario.taches || []
+        tasks.forEach((task: any) => {
+            const newDocRef = doc(todosRef)
+            let deadline = null
+            if(task.delai_minutes) {
+                const d = new Date()
+                d.setMinutes(d.getMinutes() + parseInt(task.delai_minutes))
+                deadline = Timestamp.fromDate(d)
+            }
+            batch.set(newDocRef, {
+                titre: task.titre,
+                completed: false,
+                deadline: deadline,
+                created_at: serverTimestamp(),
+                scenario_source: scenario.nom
+            })
+        })
+        await batch.commit()
+        toast.add({ title: 'Scénario appliqué', description: `${tasks.length} tâches créées`, color: 'success' })
+    } catch (e:any) { toast.add({ title: 'Erreur', description: e.message, color: 'error' }) }
+}
 
   /**
    * Logique métier : Toggle POI
