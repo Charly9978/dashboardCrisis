@@ -64,6 +64,10 @@ const eventStore = useEvenementStore()
 const route = useRoute()
 const eventId = route.params.id as string
 
+definePageMeta({
+  layout: 'event',
+})
+
 onMounted(()=>{eventStore.setEventId(eventId)})
 
 const {event,pending,saveStatus} = storeToRefs(eventStore)

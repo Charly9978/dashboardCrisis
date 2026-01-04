@@ -1,148 +1,81 @@
+<template>
+    <UContainer class="bg-gray-50">
+        <div class="fixed top-4 right-4 z-50">
+             <UBadge v-if="saveStatus !== 'idle'" :color="saveStatusColor">
+                 {{ saveStatusText }}
+             </UBadge>
+        </div>
+
+        <div v-if="pending || !event" class="flex justify-center py-12">
+            <UIcon name="i-heroicons-arrow-path" class="animate-spin text-3xl text-gray-400" />
+            <span class="ml-2 text-gray-500">Chargement de l'événement...</span>
+        </div>
+
+        <div v-else class="space-y-4">
+
+            <div class="flex justify-end h-6 sticky top-4 z-20 pointer-events-none">
+                <transition enter-active-class="transition duration-300 ease-out"
+                    enter-from-class="transform translate-y-2 opacity-0"
+                    enter-to-class="transform translate-y-0 opacity-100"
+                    leave-active-class="transition duration-200 ease-in" leave-from-class="opacity-100"
+                    leave-to-class="opacity-0">
+                    <UBadge v-if="saveStatus !== 'idle'" :color="saveStatusColor!" variant="subtle" size="sm"
+                        class="shadow-md">
+                        <UIcon :name="saveStatusIcon!" class="mr-1" />
+                        {{ saveStatusText }}
+                    </UBadge>
+                </transition>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+                <div class="lg:col-span-7 space-y-6">
+
+                    <EvenementSyntheseAlerte/>
+                    
+                    <EvenementSyntheseTodos/>
+
+                    <EvenementSyntheseInstallations/>
+
+                    <EvenementSyntheseImpact/>
+
+                    <EvenementSyntheseCommunication/>          
+                </div>
+
+                <div class="lg:col-span-5 space-y-6">
+                    
+                    <EvenementSyntheseSituation/>
+                    
+                    <EvenementSyntheseCrisisroom/>
+
+                    <EvenementSyntheseHuman/>
+
+                    <EvenementSyntheseChemical/>
+                </div>
+            </div>
+        </div>
+    </UContainer>
+</template>
+
 <script setup lang="ts">
+import { useEvenementStore } from '~/stores/eventStore';
 
-import type { NavigationMenuItem } from '@nuxt/ui'
-import { h, resolveComponent } from 'vue'
-import { useCollection } from 'vuefire'
-import { collection, query, where, Timestamp, doc } from 'firebase/firestore'
-import type { ColumnDef, Row } from '@tanstack/vue-table'
-
-interface TableActions {
-    action: string,
-    updateDate: string,
-    updateBy: string,
-    status: string
-}
-
-
-const store = useProfilStore()
+const eventStore = useEvenementStore()
 const route = useRoute()
-const db = useFirestore()
-const toast = useToast()
+const eventId = route.params.id as string
 
-const UButton = resolveComponent('UButton')
-
-const items = computed<NavigationMenuItem[]>(() => [{
-    label: 'Suivi actions',
-    to: '/benj'
-},
-{
-    label: 'Main courante',
-},{
-    label: 'admin',
-    to: '/admin'
-},])
-
-const eventId = route.params.id
-
-// 1. On récupère les détails de l'événement (1 seul document)
-// 'useDocument' le mettra à jour en temps réel si le titre change
-const eventRef = doc(db, 'evenements', eventId)
-const { data: evenement, pending: eventPending } = useDocument(eventRef)
-
-const actionsCollection = collection(db, 'actions')
-const actionsQuery = query(actionsCollection, where("evenement_id", "==", eventId))
-const { data: actions, pending: actionsPending } = useCollection(actionsQuery)
-const evacActions = computed(() => {
-    return actions.value.filter(action => action.categorie == 'evacuation')
-})
-const arretTechActions = computed(() => {
-    return actions.value.filter(action => action.categorie == 'arrets_techniques')
-})
-const securiteActions = computed(() => {
-    return actions.value.filter(action => action.categorie == 'sécurité')
-})
-
-const colors = {
-    'Non requis': 'neutral',
-    'Demandé': 'info',
-    'En cours': 'warning',
-    'Réalisé': 'success',
-    'Problème': 'error'
-}
-
-const columns: ColumnDef<TableActions>[] = [
-    {
-        accessorKey: 'nom_action',
-        header: 'Action',
-
-    }, {
-        accessorKey: 'statut_actuel',
-        header: 'Status',
-        cell: ({ row }) => {
-            const colorsBis = colors[row.getValue('statut_actuel') as string]
-            return h(UButton, {
-                class: 'capitalize',
-                variant: 'subtle',
-                size: 'sm',
-                color: colorsBis,
-                onclick: () => openModal(row)
-            }, () => row.getValue('statut_actuel')
-            )
-        }
-    }
-
-    , {
-        accessorKey: 'last_updated_at',
-        header: 'Date de mise à jour',
-        cell: ({ row }) => {
-            const timestamp = row.getValue('last_updated_at') as Timestamp
-            if (timestamp) {
-                return timestamp.toDate().toLocaleTimeString()
-            }
-        }
-    }, {
-        accessorKey: 'last_updated_by_nom',
-        header: 'Mise à jour par'
-    }, {
-        accessorKey: 'comment',
-        header: 'Commentaire'
-    }
-]
-
-//...........modale pour modification de status.............
-const isModalOpen = ref(false)
-const selectedRow = ref<any>(null)
-
-function openModal(row: Row<TableActions>) {
-    if (!store.isActeur || !store.profil) {
-        toast.add({ title: 'Accès refusé', color: 'error' })
-        return
-    }
-
-    // copie locale pour édition
-    console.log('id', row.original)
-    selectedRow.value = { ...row.original, id: row.original.id }
-    isModalOpen.value = true
-}
-
-//............................................................
 definePageMeta({
   layout: 'event',
 })
 
+onMounted(()=>{eventStore.setEventId(eventId)})
+
+const {event,pending,saveStatus} = storeToRefs(eventStore)
+
+
+// --- LOGIQUE AUTO-SAVE (Inchangée) ---
+
+const saveStatusText = computed(() => ({ 'saving': 'Enregistrement...', 'saved': 'Enregistré', 'error': 'Erreur', 'idle': '' }[saveStatus.value]))
+const saveStatusColor = computed(() => ({ 'saving': 'warning', 'saved': 'primary', 'error': 'error', 'idle': 'neutral' }[saveStatus.value]))
+const saveStatusIcon = computed(() => ({ 'saving': 'i-heroicons-arrow-path', 'saved': 'i-heroicons-check', 'error': 'i-heroicons-exclamation-triangle' }[saveStatus.value]))
 </script>
-
-<template>
-    <div v-if="eventPending || actionsPending" class="flex h-screen items-center justify-center">
-        <USpinner size="xl" />
-    </div>
-
-    <div v-else-if="!evenement" class="flex h-screen items-center justify-center">
-        <UAlert color="error" title="Événement non trouvé"
-            description="Cet événement n'existe pas ou a été supprimé." />
-    </div>
-    <UContainer>
-
-            <div class="flex flex-row-reverse">
-                <EvenementAddModal />
-            </div>
-            <h3 class="text-xl font-bold mt-4">Evacuation</h3>
-            <UTable :data="evacActions" :columns="columns" />
-            <h3 class="text-xl font-bold mt-8">Arrets techniques</h3>
-            <UTable :data="arretTechActions" :columns="columns" />
-            <h3 class="text-xl font-bold mt-8">Mesures de sécurité</h3>
-            <UTable :data="securiteActions" :columns="columns" />
-    </UContainer>
-    <!-- MODAL EXTERNE -->
-    <EvenementUpdateRowModale v-if="selectedRow" v-model="isModalOpen" :row="selectedRow" />
-</template>

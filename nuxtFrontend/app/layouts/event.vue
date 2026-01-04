@@ -40,10 +40,10 @@ const items = computed<NavigationMenuItem[]>(() => [{
     to: `/evenement/${route.params.id}`
 },{
     label: 'Suivant des actions',
-    to: `/evenement/${route.params.id}`
+    to: `/evenement/${route.params.id}/actions`
 },
  {
     label: 'Main courante',
-    to: `/evenement/${route.params.id}`
+    to: `/evenement/${route.params.id}/log`
 },])
 </script>
