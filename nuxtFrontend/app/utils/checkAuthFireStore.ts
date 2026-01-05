@@ -1,9 +1,15 @@
 import {doc, getDoc,updateDoc } from 'firebase/firestore'
 import {type Profil, useProfilStore} from '~/stores/profilStore'
+import {type User} from 'firebase/auth'
 
-export default async function(email:string,userId:string){
+export default async function(user:User) {
     const profilStore = useProfilStore()
+    console.log('checkAuthFireStore user',user)
    const db = useFirestore()
+   const email = user.email!
+   const userId = user.uid
+   const photoURL = user.photoURL
+
    try {
        const docRef = doc(db,'profils',email)
        const docSnap = await getDoc(docRef)
@@ -11,8 +17,12 @@ export default async function(email:string,userId:string){
        if(!docSnap.data()) throw new Error("unauthorized")
         const user = docSnap.data() as Profil
          console.log('user from firestore',user)
-       if(!user.user_auth_id){
-        await updateDoc(docRef,{ "user_auth_id":userId})
+       if(!user.user_auth_id || !user.photoUrl){
+        console.log('test update firestore')
+        await updateDoc(docRef,{ "user_auth_id": userId ,"photoUrl": photoURL} )
+        profilStore.setProfil({...user, user_auth_id: userId, photoUrl: photoURL})
+        localStorage.setItem('cacheProfil',JSON.stringify({...user, user_auth_id: userId, photoUrl: photoURL}))
+        return
        }
        profilStore.setProfil(user)
        localStorage.setItem('cacheProfil',JSON.stringify(user))

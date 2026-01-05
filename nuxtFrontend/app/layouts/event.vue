@@ -44,6 +44,6 @@ const items = computed<NavigationMenuItem[]>(() => [{
 },
  {
     label: 'Main courante',
-    to: `/evenement/${route.params.id}/log`
+    to: `/evenement/${route.params.id}/chatroom`
 },])
 </script>

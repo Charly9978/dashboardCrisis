@@ -57,7 +57,7 @@ async function signInWithGoogle() {
     const provider = new GoogleAuthProvider()
     const userCredential = await signInWithPopup(auth, provider)
     const user = userCredential.user
-    await checkAuthFireStore(user.email,user.uid)
+    await checkAuthFireStore(user)
     const idTokenResult = await user.getIdTokenResult()
     console.log('idToken',idTokenResult)
     const expirationTime = new Date(idTokenResult.expirationTime).getTime()

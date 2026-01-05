@@ -40,6 +40,12 @@ service cloud.firestore {
         // Les Acteurs peuvent créer, cocher, supprimer des tâches
         allow read, write: if isActeur();
       }
+
+      // --- AJOUT CHAT (NOUVEAU) ---
+      // Permet aux Acteurs de lire, écrire (envoyer) et modifier (épingler) les messages
+      match /messages/{messageId} {
+        allow read, write: if isActeur();
+      }
     }
 
     // 3. Actions (SITREP)
